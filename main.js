@@ -1,3 +1,5 @@
+"use strict";
+
 var slider_size,
   slider_level,
   slider_rot,
@@ -28,7 +30,7 @@ var input_seed, //
   size,
   maxLevel,
   rot,
-  lenRan,
+  lenRand,
   branchProb,
   rotRand,
   leafProb;
@@ -178,11 +180,6 @@ function setup() {
 
   div_inputs = createDiv("");
 
-  mX = mouseX;
-  mY = mouseY;
-  panX = 0;
-  panY = 0;
-
   readInputs(false);
   startGrow();
 }
@@ -218,7 +215,12 @@ function draw() {
 
   translate(0, 20);
 
-  branch(1, randSeed);
+  randomSeed(randSeed);
+
+  for (var i = 0; i < 3; i++) {
+    rootBranch.grow();
+    drawBranch(rootBranch);
+  }
 
   var endTime = millis();
   label_perf.html(
@@ -228,70 +230,24 @@ function draw() {
   noLoop();
 }
 
-function branch(level, seed) {
-  randomSeed(seed);
+function drawBranch(branch) {
+  // Save graphic settings
+  push();
 
-  var seed1 = random(1000),
-    seed2 = random(1000);
+  strokeWeight(branch.width);
+  rotate(branch.angle);
+  line(0, 0, 0, branch.length);
+  translate(0, branch.length);
 
-  strokeWeight(12 * Math.pow((maxLevel - level + 1) / maxLevel, 2));
-
-  var len = 1 * size * (1 + rand2() * lenRand);
-
-  line(0, 0, 0, len / level);
-  translate(0, len / level);
-
-  var doBranch1 = rand() < branchProb;
-  var doBranch2 = rand() < branchProb;
-
-  var doLeaves = rand() < leafProb;
-
-  if (level < maxLevel) {
-    var r1 = rot * (1 + rrand() * rotRand);
-    var r2 = -rot * (1 - rrand() * rotRand);
-
-    if (doBranch1) {
-      push();
-      rotate(r1);
-      branch(level + 1, seed1);
-      pop();
-    }
-    if (doBranch2) {
-      push();
-      rotate(r2);
-      branch(level + 1, seed2);
-      pop();
-    }
+  var arrayLength = branch.children.length;
+  for (var i = 0; i < arrayLength; i++) {
+    drawBranch(branch.children[i]);
   }
 
-  if ((level >= maxLevel || (!doBranch1 && !doBranch2)) && doLeaves) {
-    var p = Math.min(1, Math.max(0, prog - level));
-
-    var flowerSize = (size / 100) * p * (1 / 6) * (len / level);
-
-    strokeWeight(1);
-    stroke(240 + 15 * rand2(), 140 + 15 * rand2(), 140 + 15 * rand2());
-
-    rotate(-PI);
-    for (var i = 0; i <= 8; i++) {
-      line(0, 0, 0, flowerSize * (1 + 0.5 * rand2()));
-      rotate((2 * PI) / 8);
-    }
-  }
+  // Restore graphic settings
+  pop();
 }
 
 function startGrow() {
   loop();
-}
-
-function rand() {
-  return random(1000) / 1000;
-}
-
-function rand2() {
-  return random(2000) / 1000 - 1;
-}
-
-function rrand() {
-  return rand2() + randBias;
 }
