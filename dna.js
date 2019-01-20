@@ -13,7 +13,7 @@ class Branch {
     this.width = width;
 
     this.name = "";
-    this.absAngle = parent === null ? 0.0 : parent.angle + angle;
+    this.absAngle = parent === null ? 0.0 : parent.absAngle + angle;
     this.startX = parent === null ? 0.0 : parent.endX;
     this.startY = parent === null ? 0.0 : parent.endY;
     this.endX = this.startX + this.length * Math.sin(this.absAngle);

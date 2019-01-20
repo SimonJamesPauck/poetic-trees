@@ -235,9 +235,12 @@ function drawBranch(branch) {
   push();
 
   strokeWeight(branch.width);
-  rotate(branch.angle);
-  line(0, 0, 0, branch.length);
-  translate(0, branch.length);
+  line(
+    branch.startX, //
+    branch.startY,
+    branch.endX,
+    branch.endY
+  );
 
   var arrayLength = branch.children.length;
   for (var i = 0; i < arrayLength; i++) {
