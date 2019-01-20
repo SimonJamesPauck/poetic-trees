@@ -1,5 +1,16 @@
 "use strict";
 
+const nodeProduction = 0.1;
+
+class Root {
+  constructor() {
+    this.canSupply = 999999;
+    this.absAngle = 0.0;
+    this.endX = 0.0;
+    this.endY = 0.0;
+  }
+}
+
 class Branch {
   constructor(
     parent, //
@@ -12,10 +23,13 @@ class Branch {
     this.length = length;
     this.width = width;
 
+    this.canSupply = 0;
+    this.canProduce = nodeProduction;
+
     this.name = "";
-    this.absAngle = parent === null ? 0.0 : parent.absAngle + angle;
-    this.startX = parent === null ? 0.0 : parent.endX;
-    this.startY = parent === null ? 0.0 : parent.endY;
+    this.absAngle = parent.absAngle + angle;
+    this.startX = parent.endX;
+    this.startY = parent.endY;
     this.endX = this.startX + this.length * Math.sin(this.absAngle);
     this.endY = this.startY + this.length * Math.cos(this.absAngle);
 
@@ -36,33 +50,59 @@ class Branch {
   }
 
   grow() {
-    this.width = this.width + 0.5;
+    let numberOfChildren = this.children.length;
 
-    var arrayLength = this.children.length;
-    for (var i = 0; i < arrayLength; i++) {
-      this.children[i].grow();
+    for (let i = 0; i < numberOfChildren; i++) {
+      if (
+        this.children[i].width > 5 &&
+        this.children[i].width < randomGaussian(4, 1)
+      ) {
+        this.children[i].parent = null;
+        this.children.splice(i, 1);
+        numberOfChildren -= 1;
+        break;
+      }
     }
 
-    if (this.children.length < 2) {
+    let suppliedWith = this.parent.canSupply;
+
+    let canSupplyPotential = this.width * this.width * 0.01;
+
+    this.canSupply = Math.min(suppliedWith, canSupplyPotential);
+
+    this.canProduce = nodeProduction;
+
+    for (let i = 0; i < numberOfChildren; i++) {
+      this.canProduce += this.children[i].canProduce;
+    }
+
+    let production = Math.min(this.canProduce, suppliedWith);
+
+    this.width += Math.sqrt(production);
+
+    if (
+      this.canSupply - this.canProduce > nodeProduction * 2 &&
+      numberOfChildren < 2
+    ) {
       let br1 = newBranch(
         this, //
-        1.0 + randomGaussian(0, 0.1)
+        0.5 + randomGaussian(0, 0.1)
       );
-      if (Math.abs(br1.absAngle) < 2.0 && !br1.isCloseToAnyFrom(rootBranch)) {
-        br1.name = this.name + "L";
-        console.log("Added: " + br1.name);
-        this.children.push(br1);
-      }
+      br1.name = this.name + (numberOfChildren + 1);
+      console.log("Added: " + br1.name);
+      this.children.push(br1);
 
       let br2 = newBranch(
         this, //
-        -1.0 + randomGaussian(0, 0.1)
+        -0.5 + randomGaussian(0, 0.1)
       );
-      if (Math.abs(br2.absAngle) < 2.0 && !br2.isCloseToAnyFrom(rootBranch)) {
-        br2.name = this.name + "R";
-        console.log("Added: " + br2.name);
-        this.children.push(br2);
-      }
+      br2.name = this.name + (numberOfChildren + 2);
+      console.log("Added: " + br2.name);
+      this.children.push(br2);
+    }
+
+    for (let i = 0; i < numberOfChildren; i++) {
+      this.children[i].grow();
     }
   }
 
@@ -70,8 +110,8 @@ class Branch {
     if (this.isCloseTo(branch)) {
       return true;
     } else {
-      var arrayLength = branch.children.length;
-      for (var i = 0; i < arrayLength; i++) {
+      let arrayLength = branch.children.length;
+      for (let i = 0; i < arrayLength; i++) {
         if (this.isCloseToAnyFrom(branch.children[i])) {
           return true;
         }
@@ -107,8 +147,8 @@ function newBranch(
     parent, //
     angle,
     50.0,
-    10.0
+    2.0
   );
 }
 
-var rootBranch = newBranch(null, 0.0);
+var rootBranch = newBranch(new Root(), 0.0);
