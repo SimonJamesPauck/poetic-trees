@@ -10,6 +10,7 @@ class Root {
     this.endY = 0.0;
 
     this.branch = newBranch(this, 0.0);
+    this.branch.name = "0";
   }
 
   grow() {
@@ -55,9 +56,9 @@ class Branch {
   get supplyPotential() {
     return this.width * this.width * 0.01;
   }
-  
+
   cullBranches() {
-    this.children.filter((child, _, _) => {
+    this.children.filter((child, index, children) => {
       if (child.width > 5 && child.width < randomGaussian(4, 1)) {
         child.parent = null;
         return false;
@@ -71,17 +72,14 @@ class Branch {
 
     let numberOfChildren = this.children.length;
 
-    console.log(this.supplyPotential)
+    console.log(this.name + " - this.supplyPotential: " + this.supplyPotential);
 
     // TODO: Introduce efficiency
     let canSupply = Math.min(supply, this.supplyPotential);
 
     let canProduce = nodeProduction;
 
-    if (
-      // this.canSupply - this.canProduce > nodeProduction * 2 &&
-      numberOfChildren < 2
-    ) {
+    if (canSupply - canProduce > nodeProduction * 2 && numberOfChildren < 2) {
       let br1 = newBranch(
         this, //
         0.5 + randomGaussian(0, 0.1)
@@ -103,11 +101,17 @@ class Branch {
       canProduce += this.children[i].grow(canSupply);
     }
 
+    console.log(this.name + " - supply: " + supply);
+    console.log(this.name + " - canProduce: " + canProduce);
+
     let production = Math.min(canProduce, supply);
 
-    this.width += Math.sqrt(production);
-  }
+    console.log(this.name + " - production: " + production);
 
+    this.width += Math.sqrt(production);
+
+    return production;
+  }
 
   isCloseToAnyFrom(branch) {
     if (this.isCloseTo(branch)) {
