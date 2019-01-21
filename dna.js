@@ -18,6 +18,35 @@ class Root {
   }
 }
 
+class Leaf {
+  constructor(
+    parent, //
+    angle
+  ) {
+    this.parent = parent;
+    this.angle = angle;
+    this.length = 10;
+    this.width = 5;
+
+    this.name = "L";
+    this.absAngle = parent.absAngle + angle;
+    this.startX = parent.endX;
+    this.startY = parent.endY;
+    this.endX = this.startX + this.length * Math.sin(this.absAngle);
+    this.endY = this.startY + this.length * Math.cos(this.absAngle);
+  }
+
+  get supplyPotential() {
+    return nodeProduction;
+  }
+
+  grow(supply) {
+    let production = Math.min(this.supplyPotential, supply);
+    console.log(this.name + " - production: " + production);
+    return production;
+  }
+}
+
 class Branch {
   constructor(
     parent, //
@@ -30,7 +59,7 @@ class Branch {
     this.length = length;
     this.width = width;
 
-    this.name = "";
+    this.name = "B";
     this.absAngle = parent.absAngle + angle;
     this.startX = parent.endX;
     this.startY = parent.endY;
@@ -51,6 +80,9 @@ class Branch {
     );
 
     this.children = [];
+    this.children.push(new Leaf(this, 0.0));
+    this.children.push(new Leaf(this, 0.5));
+    this.children.push(new Leaf(this, -0.5));
   }
 
   get supplyPotential() {
@@ -85,31 +117,12 @@ class Branch {
     // TODO: Introduce efficiency
     let canSupply = Math.min(supply, this.supplyPotential);
 
-    let canProduce = nodeProduction;
-
-    if (canSupply - canProduce > nodeProduction * 2 && numberOfChildren < 2) {
-      let br1 = newBranch(
-        this, //
-        randomGaussian(0, 0.5)
-      );
-      br1.name = this.name + (numberOfChildren + 1);
-      console.log("Added: " + br1.name);
-      this.children.push(br1);
-
-      // let br2 = newBranch(
-      //   this, //
-      //   -0.5 + randomGaussian(0, 0.1)
-      // );
-      // br2.name = this.name + (numberOfChildren + 2);
-      // console.log("Added: " + br2.name);
-      // this.children.push(br2);
-    }
-
     let totalDemand = this.children.reduce(
       (accumulator, child) => accumulator + child.supplyPotential,
       0
     );
 
+    let canProduce = 0.0;
     let normalizedDemand = canSupply / totalDemand;
 
     for (let i = 0; i < numberOfChildren; i++) {
@@ -124,6 +137,24 @@ class Branch {
     let production = Math.min(canProduce, canSupply);
 
     console.log(this.name + " - production: " + production);
+
+    if (canSupply - canProduce > nodeProduction * 2 && numberOfChildren < 2) {
+      let br1 = newBranch(
+        this, //
+        randomGaussian(0, 0.5)
+      );
+      br1.name = this.name + br1.name + (numberOfChildren + 1);
+      console.log("Added: " + br1.name);
+      this.children.push(br1);
+
+      // let br2 = newBranch(
+      //   this, //
+      //   -0.5 + randomGaussian(0, 0.1)
+      // );
+      // br2.name = this.name + (numberOfChildren + 2);
+      // console.log("Added: " + br2.name);
+      // this.children.push(br2);
+    }
 
     if (canSupply < canProduce) {
       // should grow

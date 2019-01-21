@@ -219,7 +219,7 @@ function draw() {
 
   for (var i = 0; i < 5; i++) {
     rootBranch.grow();
-    drawBranch(rootBranch.branch);
+    drawNode(rootBranch.branch);
   }
 
   var endTime = millis();
@@ -230,10 +230,38 @@ function draw() {
   noLoop();
 }
 
+function drawNode(node) {
+  console.log("typeof: " + typeof node);
+
+  if (typeof node == "Leaf") {
+    drawLeaf(node);
+  } else {
+    drawBranch(node);
+  }
+}
+
+function drawLeaf(leaf) {
+  // Save graphic settings
+  push();
+
+  stroke(0, 200, 55);
+  strokeWeight(leaf.width);
+  line(
+    leaf.startX, //
+    leaf.startY,
+    leaf.endX,
+    leaf.endY
+  );
+
+  // Restore graphic settings
+  pop();
+}
+
 function drawBranch(branch) {
   // Save graphic settings
   push();
 
+  stroke(255, 255, 255);
   strokeWeight(branch.width);
   line(
     branch.startX, //
@@ -244,7 +272,7 @@ function drawBranch(branch) {
 
   var arrayLength = branch.children.length;
   for (var i = 0; i < arrayLength; i++) {
-    drawBranch(branch.children[i]);
+    drawNode(branch.children[i]);
   }
 
   // Restore graphic settings
