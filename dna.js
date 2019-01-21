@@ -8,6 +8,12 @@ class Root {
     this.absAngle = 0.0;
     this.endX = 0.0;
     this.endY = 0.0;
+
+    this.branch = newBranch(this, 0.0);
+  }
+
+  grow() {
+    this.branch.grow(this.canSupply);
   }
 }
 
@@ -22,9 +28,6 @@ class Branch {
     this.angle = angle;
     this.length = length;
     this.width = width;
-
-    this.canSupply = 0;
-    this.canProduce = nodeProduction;
 
     this.name = "";
     this.absAngle = parent.absAngle + angle;
@@ -49,39 +52,34 @@ class Branch {
     this.children = [];
   }
 
-  grow() {
+  get supplyPotential() {
+    return this.width * this.width * 0.01;
+  }
+  
+  cullBranches() {
+    this.children.filter((child, _, _) => {
+      if (child.width > 5 && child.width < randomGaussian(4, 1)) {
+        child.parent = null;
+        return false;
+      }
+      return true;
+    });
+  }
+
+  grow(supply) {
+    // this.cullBranches();
+
     let numberOfChildren = this.children.length;
 
-    for (let i = 0; i < numberOfChildren; i++) {
-      if (
-        this.children[i].width > 5 &&
-        this.children[i].width < randomGaussian(4, 1)
-      ) {
-        this.children[i].parent = null;
-        this.children.splice(i, 1);
-        numberOfChildren -= 1;
-        break;
-      }
-    }
+    console.log(this.supplyPotential)
 
-    let suppliedWith = this.parent.canSupply;
+    // TODO: Introduce efficiency
+    let canSupply = Math.min(supply, this.supplyPotential);
 
-    let canSupplyPotential = this.width * this.width * 0.01;
-
-    this.canSupply = Math.min(suppliedWith, canSupplyPotential);
-
-    this.canProduce = nodeProduction;
-
-    for (let i = 0; i < numberOfChildren; i++) {
-      this.canProduce += this.children[i].canProduce;
-    }
-
-    let production = Math.min(this.canProduce, suppliedWith);
-
-    this.width += Math.sqrt(production);
+    let canProduce = nodeProduction;
 
     if (
-      this.canSupply - this.canProduce > nodeProduction * 2 &&
+      // this.canSupply - this.canProduce > nodeProduction * 2 &&
       numberOfChildren < 2
     ) {
       let br1 = newBranch(
@@ -102,9 +100,14 @@ class Branch {
     }
 
     for (let i = 0; i < numberOfChildren; i++) {
-      this.children[i].grow();
+      canProduce += this.children[i].grow(canSupply);
     }
+
+    let production = Math.min(canProduce, supply);
+
+    this.width += Math.sqrt(production);
   }
+
 
   isCloseToAnyFrom(branch) {
     if (this.isCloseTo(branch)) {
@@ -151,4 +154,4 @@ function newBranch(
   );
 }
 
-var rootBranch = newBranch(new Root(), 0.0);
+var rootBranch = new Root();

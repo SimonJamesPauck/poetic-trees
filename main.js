@@ -217,9 +217,9 @@ function draw() {
 
   randomSeed(randSeed);
 
-  for (var i = 0; i < 25; i++) {
+  for (var i = 0; i < 5; i++) {
     rootBranch.grow();
-    drawBranch(rootBranch);
+    drawBranch(rootBranch.branch);
   }
 
   var endTime = millis();
