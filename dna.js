@@ -58,17 +58,25 @@ class Branch {
   }
 
   cullBranches() {
-    this.children.filter((child, index, children) => {
-      if (child.width > 5 && child.width < randomGaussian(4, 1)) {
-        child.parent = null;
+    this.children = this.children.filter((child, index, children) => {
+      if (child.width > 5 && child.width < randomGaussian(0, 3)) {
+        child.prune();
         return false;
       }
       return true;
     });
   }
 
+  prune() {
+    this.parent = null;
+    let numberOfChildren = this.children.length;
+    for (let i = 0; i < numberOfChildren; i++) {
+      this.children[i].prune();
+    }
+  }
+
   grow(supply) {
-    // this.cullBranches();
+    this.cullBranches();
 
     let numberOfChildren = this.children.length;
 
@@ -82,19 +90,19 @@ class Branch {
     if (canSupply - canProduce > nodeProduction * 2 && numberOfChildren < 2) {
       let br1 = newBranch(
         this, //
-        0.5 + randomGaussian(0, 0.1)
+        randomGaussian(0, 0.5)
       );
       br1.name = this.name + (numberOfChildren + 1);
       console.log("Added: " + br1.name);
       this.children.push(br1);
 
-      let br2 = newBranch(
-        this, //
-        -0.5 + randomGaussian(0, 0.1)
-      );
-      br2.name = this.name + (numberOfChildren + 2);
-      console.log("Added: " + br2.name);
-      this.children.push(br2);
+      // let br2 = newBranch(
+      //   this, //
+      //   -0.5 + randomGaussian(0, 0.1)
+      // );
+      // br2.name = this.name + (numberOfChildren + 2);
+      // console.log("Added: " + br2.name);
+      // this.children.push(br2);
     }
 
     let totalDemand = this.children.reduce(
