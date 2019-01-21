@@ -72,7 +72,7 @@ class Branch {
 
     let numberOfChildren = this.children.length;
 
-    console.log(this.name + " - this.supplyPotential: " + this.supplyPotential);
+    // console.log(this.name + " - this.supplyPotential: " + this.supplyPotential);
 
     // TODO: Introduce efficiency
     let canSupply = Math.min(supply, this.supplyPotential);
@@ -97,20 +97,37 @@ class Branch {
       this.children.push(br2);
     }
 
+    let totalDemand = this.children.reduce(
+      (accumulator, child) => accumulator + child.supplyPotential,
+      0
+    );
+
+    let normalizedDemand = canSupply / totalDemand;
+
     for (let i = 0; i < numberOfChildren; i++) {
-      canProduce += this.children[i].grow(canSupply);
+      let childDemand = this.children[i].supplyPotential;
+      let childSupply = normalizedDemand * childDemand;
+      canProduce += this.children[i].grow(childSupply);
     }
 
-    console.log(this.name + " - supply: " + supply);
+    console.log(this.name + " - canSupply: " + canSupply);
     console.log(this.name + " - canProduce: " + canProduce);
 
-    let production = Math.min(canProduce, supply);
+    let production = Math.min(canProduce, canSupply);
 
     console.log(this.name + " - production: " + production);
 
-    this.width += Math.sqrt(production);
+    if (canSupply < canProduce) {
+      // should grow
+    }
 
-    return production;
+    if (supply < this.supplyPotential) {
+      // feed below
+      return production;
+    } else {
+      this.width += Math.sqrt(production);
+      return 0.0;
+    }
   }
 
   isCloseToAnyFrom(branch) {
