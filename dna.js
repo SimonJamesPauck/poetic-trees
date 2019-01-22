@@ -18,12 +18,30 @@ class Root {
   }
 }
 
-class Leaf {
+class TreeNode {
+  constructor(
+    parent //
+  ) {
+    this.parent = parent;
+    this.children = [];
+  }
+
+  prune() {
+    this.parent = null;
+    let numberOfChildren = this.children.length;
+    for (let i = 0; i < numberOfChildren; i++) {
+      this.children[i].prune();
+    }
+  }
+}
+
+class Leaf extends TreeNode {
   constructor(
     parent, //
     angle
   ) {
-    this.parent = parent;
+    super(parent);
+
     this.angle = angle;
     this.length = 10;
     this.width = 5;
@@ -47,14 +65,15 @@ class Leaf {
   }
 }
 
-class Branch {
+class Branch extends TreeNode {
   constructor(
     parent, //
     angle,
     length,
     width
   ) {
-    this.parent = parent;
+    super(parent);
+
     this.angle = angle;
     this.length = length;
     this.width = width;
@@ -79,10 +98,9 @@ class Branch {
         this.absAngle
     );
 
-    this.children = [];
     this.children.push(new Leaf(this, 0.0));
-    this.children.push(new Leaf(this, 0.5));
-    this.children.push(new Leaf(this, -0.5));
+    this.children.push(new Leaf(this, 1));
+    this.children.push(new Leaf(this, -1));
   }
 
   get supplyPotential() {
@@ -91,20 +109,14 @@ class Branch {
 
   cullBranches() {
     this.children = this.children.filter((child, index, children) => {
-      if (child.width > 5 && child.width < randomGaussian(0, 3)) {
+      let cutoff = randomGaussian(0, 3);
+      console.log("cutoff: " + cutoff);
+      if (child.width > 4.5 && child.width < cutoff) {
         child.prune();
         return false;
       }
       return true;
     });
-  }
-
-  prune() {
-    this.parent = null;
-    let numberOfChildren = this.children.length;
-    for (let i = 0; i < numberOfChildren; i++) {
-      this.children[i].prune();
-    }
   }
 
   grow(supply) {
@@ -164,7 +176,7 @@ class Branch {
       // feed below
       return production;
     } else {
-      this.width += Math.sqrt(production);
+      this.width = Math.sqrt((this.supplyPotential + production) * 100);
       return 0.0;
     }
   }
