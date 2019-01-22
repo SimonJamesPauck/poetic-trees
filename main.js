@@ -105,7 +105,9 @@ function drawLeaf(leaf) {
   // Save graphic settings
   push();
 
-  stroke(0, 200, 55);
+  let shade = leaf.calculateShade(1.0, leaf, rootBranch.branch);
+  shade = Math.max(0, shade);
+  stroke(0, 200 * shade, 55 * shade);
   strokeWeight(leaf.width);
   line(
     leaf.startX, //

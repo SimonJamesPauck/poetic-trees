@@ -63,6 +63,36 @@ class Leaf extends TreeNode {
     console.log(this.name + " - production: " + production);
     return production;
   }
+
+  calculateShade(existingShade, targetNode, node) {
+    if (existingShade < 0) return existingShade;
+
+    let arrayLength = node.children.length;
+
+    if (arrayLength === 0) {
+      // Node is a leaf
+      return this.leafShade(existingShade, targetNode, node);
+    } else {
+      // Node is a branch
+
+      let shade = existingShade;
+      for (let i = 0; i < arrayLength; i++) {
+        shade = this.calculateShade(shade, targetNode, node.children[i]);
+      }
+      return shade;
+    }
+  }
+
+  leafShade(existingShade, targetNode, node) {
+    if (node.startY < targetNode.startY + 1.0) {
+      return existingShade;
+    } else {
+      let dx = targetNode.startX - node.startX;
+      let dy = targetNode.startY - node.startY;
+      let dD = dx * dx + dy * dy;
+      return existingShade - 1 / Math.sqrt(dD);
+    }
+  }
 }
 
 class Branch extends TreeNode {
