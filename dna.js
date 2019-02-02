@@ -22,11 +22,12 @@ class Root {
 
   newGrowthInstructions() {
     return new GrowthInstructions(
-      new GrowthInstruction(-1, parent => new Leaf(parent, 0)),
-      new GrowthInstruction(-1, parent => new Leaf(parent, 1)),
-      new GrowthInstruction(-1, parent => new Leaf(parent, -1)),
+      new GrowthInstruction(-1, -1, parent => new Leaf(parent, 0)),
+      new GrowthInstruction(-1, -1, parent => new Leaf(parent, 1)),
+      new GrowthInstruction(-1, -1, parent => new Leaf(parent, -1)),
       new GrowthInstruction(
         nodeProduction * 2, //
+        nodeProduction,
         parent =>
           newBranch(
             parent, //
@@ -36,6 +37,7 @@ class Root {
       ),
       new GrowthInstruction(
         nodeProduction * 10, //
+        nodeProduction,
         parent =>
           newBranch(
             parent, //
@@ -45,6 +47,7 @@ class Root {
       ),
       new GrowthInstruction(
         nodeProduction * 10, //
+        nodeProduction,
         parent =>
           newBranch(
             parent, //
@@ -83,6 +86,7 @@ class Leaf extends TreeNode {
     this.angle = angle;
     this.length = 10;
     this.width = 5;
+    this.shade = 1;
 
     this.name = "L";
     this.absAngle = parent.absAngle + angle;
@@ -99,11 +103,14 @@ class Leaf extends TreeNode {
   grow(supply) {
     let production = Math.min(this.supplyPotential, supply);
     console.log(this.name + " - production: " + production);
-    return production;
+
+    this.shade = this.calculateShade(1.0, this, rootBranch);
+
+    return production * this.shade;
   }
 
   calculateShade(existingShade, targetNode, node) {
-    if (existingShade < 0) return existingShade;
+    if (existingShade <= 0) return 0;
 
     let arrayLength = node.children.length;
 
@@ -125,8 +132,9 @@ class Leaf extends TreeNode {
     } else {
       let dx = targetNode.startX - node.startX;
       let dy = targetNode.startY - node.startY;
-      let dD = dx * dx + dy * dy;
-      return existingShade - 1 / Math.sqrt(dD);
+      let dD = dx * dx + dy * dy * 9;
+      let result = existingShade - 1 / Math.sqrt(dD);
+      return Math.max(0, result);
     }
   }
 }
@@ -134,9 +142,11 @@ class Leaf extends TreeNode {
 class GrowthInstruction {
   constructor(
     threshold, //
+    threshold2,
     execute
   ) {
     this.threshold = threshold;
+    this.threshold2 = threshold2;
     this.execute = execute;
   }
 }
@@ -149,9 +159,11 @@ class GrowthInstructions {
     this.index = 0;
   }
 
-  grow(branch, production) {
+  grow(branch, supply, production) {
+    if (this.index + 1 > this.instructionSet.length) return;
+
     let current = this.instructionSet[this.index];
-    if (production >= current.threshold) {
+    if (supply >= current.threshold && production >= current.threshold2) {
       branch.children.push(current.execute(branch));
       this.index++;
       this.grow(branch, production);
@@ -203,8 +215,11 @@ class Branch extends TreeNode {
     this.children = this.children.filter((child, index, children) => {
       let cutoff = randomGaussian(0, 2);
       // console.log("cutoff: " + cutoff);
-
-      if (child.width > 4.5 && child.width < cutoff) {
+      if (
+        child instanceof Branch &&
+        child.width > 4.5 &&
+        child.width < cutoff
+      ) {
         child.prune();
         return false;
       }
@@ -241,9 +256,18 @@ class Branch extends TreeNode {
 
     let production = Math.min(canProduce, canSupply);
 
+    if (
+      this.growthInstructions.index > 0 &&
+      canSupply < nodeProduction * 1000 &&
+      production < nodeProduction * 0.3
+    ) {
+      this.prune();
+      return 0;
+    }
+
     console.log(this.name + " - production: " + production);
 
-    this.growthInstructions.grow(this, production);
+    this.growthInstructions.grow(this, canSupply, production);
 
     if (canSupply < canProduce) {
       // should grow
@@ -251,6 +275,7 @@ class Branch extends TreeNode {
 
     if (supply < this.supplyPotential) {
       // feed below
+      console.error("How did we get here!?");
       return production;
     } else {
       let maxUsage = supply - this.supplyPotential;
