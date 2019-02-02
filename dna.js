@@ -273,6 +273,7 @@ class Branch extends TreeNode {
       // should grow
     }
 
+    // TODO: add survival needs (i.e. minimum production to stay alive)
     if (supply < this.supplyPotential) {
       // feed below
       console.error("How did we get here!?");
