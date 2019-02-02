@@ -79,7 +79,7 @@ function draw() {
 
   for (var i = 0; i < 5; i++) {
     rootBranch.grow();
-    drawNode(rootBranch.branch);
+    drawNode(rootBranch.children[0]);
   }
 
   var endTime = millis();
@@ -105,8 +105,9 @@ function drawLeaf(leaf) {
   // Save graphic settings
   push();
 
-  let shade = leaf.calculateShade(1.0, leaf, rootBranch.branch);
-  shade = Math.max(0, shade);
+  // let shade = leaf.calculateShade(1.0, leaf, rootBranch);
+  // shade = Math.max(0, shade);
+  let shade = 1;
   stroke(0, 200 * shade, 55 * shade);
   strokeWeight(leaf.width);
   line(

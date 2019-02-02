@@ -9,12 +9,50 @@ class Root {
     this.endX = 0.0;
     this.endY = 0.0;
 
-    this.branch = newBranch(this, 0.0);
-    this.branch.name = "0";
+    var growthInstructions = this.newGrowthInstructions();
+
+    this.children = [];
+    this.children.push(newBranch(this, 0.0, growthInstructions));
+    this.children[0].name = "0";
   }
 
   grow() {
-    this.branch.grow(this.canSupply);
+    this.children[0].grow(this.canSupply);
+  }
+
+  newGrowthInstructions() {
+    return new GrowthInstructions(
+      new GrowthInstruction(-1, parent => new Leaf(parent, 0)),
+      new GrowthInstruction(-1, parent => new Leaf(parent, 1)),
+      new GrowthInstruction(-1, parent => new Leaf(parent, -1)),
+      new GrowthInstruction(
+        nodeProduction * 2, //
+        parent =>
+          newBranch(
+            parent, //
+            randomGaussian(0, 0.2),
+            this.newGrowthInstructions()
+          )
+      ),
+      new GrowthInstruction(
+        nodeProduction * 10, //
+        parent =>
+          newBranch(
+            parent, //
+            randomGaussian(-1, 0.2),
+            this.newGrowthInstructions()
+          )
+      ),
+      new GrowthInstruction(
+        nodeProduction * 10, //
+        parent =>
+          newBranch(
+            parent, //
+            randomGaussian(1, 0.2),
+            this.newGrowthInstructions()
+          )
+      )
+    );
   }
 }
 
@@ -73,8 +111,6 @@ class Leaf extends TreeNode {
       // Node is a leaf
       return this.leafShade(existingShade, targetNode, node);
     } else {
-      // Node is a branch
-
       let shade = existingShade;
       for (let i = 0; i < arrayLength; i++) {
         shade = this.calculateShade(shade, targetNode, node.children[i]);
@@ -95,20 +131,50 @@ class Leaf extends TreeNode {
   }
 }
 
+class GrowthInstruction {
+  constructor(
+    threshold, //
+    execute
+  ) {
+    this.threshold = threshold;
+    this.execute = execute;
+  }
+}
+
+class GrowthInstructions {
+  constructor(
+    ...instructionSet //
+  ) {
+    this.instructionSet = instructionSet;
+    this.index = 0;
+  }
+
+  grow(branch, production) {
+    let current = this.instructionSet[this.index];
+    if (production >= current.threshold) {
+      branch.children.push(current.execute(branch));
+      this.index++;
+      this.grow(branch, production);
+    }
+  }
+}
+
 class Branch extends TreeNode {
   constructor(
     parent, //
     angle,
     length,
-    width
+    width,
+    growthInstructions
   ) {
     super(parent);
 
     this.angle = angle;
     this.length = length;
     this.width = width;
+    this.growthInstructions = growthInstructions;
 
-    this.name = "B";
+    this.name = parent.name + "B" + parent.children.length;
     this.absAngle = parent.absAngle + angle;
     this.startX = parent.endX;
     this.startY = parent.endY;
@@ -127,10 +193,6 @@ class Branch extends TreeNode {
         ", a: " +
         this.absAngle
     );
-
-    this.children.push(new Leaf(this, 0.0));
-    this.children.push(new Leaf(this, 1));
-    this.children.push(new Leaf(this, -1));
   }
 
   get supplyPotential() {
@@ -139,8 +201,9 @@ class Branch extends TreeNode {
 
   cullBranches() {
     this.children = this.children.filter((child, index, children) => {
-      let cutoff = randomGaussian(0, 3);
-      console.log("cutoff: " + cutoff);
+      let cutoff = randomGaussian(0, 2);
+      // console.log("cutoff: " + cutoff);
+
       if (child.width > 4.5 && child.width < cutoff) {
         child.prune();
         return false;
@@ -180,23 +243,7 @@ class Branch extends TreeNode {
 
     console.log(this.name + " - production: " + production);
 
-    if (canSupply - canProduce > nodeProduction * 2 && numberOfChildren < 2) {
-      let br1 = newBranch(
-        this, //
-        randomGaussian(0, 0.5)
-      );
-      br1.name = this.name + br1.name + (numberOfChildren + 1);
-      console.log("Added: " + br1.name);
-      this.children.push(br1);
-
-      // let br2 = newBranch(
-      //   this, //
-      //   -0.5 + randomGaussian(0, 0.1)
-      // );
-      // br2.name = this.name + (numberOfChildren + 2);
-      // console.log("Added: " + br2.name);
-      // this.children.push(br2);
-    }
+    this.growthInstructions.grow(this, production);
 
     if (canSupply < canProduce) {
       // should grow
@@ -206,8 +253,10 @@ class Branch extends TreeNode {
       // feed below
       return production;
     } else {
-      this.width = Math.sqrt((this.supplyPotential + production) * 100);
-      return 0.0;
+      let maxUsage = supply - this.supplyPotential;
+      let useThisMuch = Math.min(production, maxUsage);
+      this.width = Math.sqrt((this.supplyPotential + useThisMuch) * 100);
+      return production - useThisMuch;
     }
   }
 
@@ -246,13 +295,15 @@ class Branch extends TreeNode {
 
 function newBranch(
   parent, //
-  angle
+  angle,
+  growthInstructions
 ) {
   return new Branch(
     parent, //
     angle,
     50.0,
-    2.0
+    2.0,
+    growthInstructions
   );
 }
 
